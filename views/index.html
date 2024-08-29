@@ -6,20 +6,23 @@
     <title>The Internet Gradient</title>
     <meta
       name="description"
-      content="The Internet Gradient is a live gradient that updates in real-time based on user interaction. The Internet Gradient will continue to update until it reaches the unsigned 32 bit integer limit. Created by Dris Elamri." />
+      content="The Internet Gradient is a live canvas that updates in real-time based on user interaction. The Internet Gradient will continue to update until it reaches the unsigned 32 bit integer limit. Created by Dris Elamri." />
     <link rel="icon" href="/static/internet-gradient-favicon.png" type="image/png" />
 
     <meta property="og:type" content="website" />
     <meta property="og:url" content="https://internetgradient.com" />
     <meta property="og:title" content="The Internet Gradient" />
-    <meta property="og:description" content="The Internet Gradient is a live gradient that updates in real-time based on user interaction. Created by Dris Elamri." />
+    <meta
+      property="og:description"
+      content="The Internet Gradient is a live canvas that updates in real-time based on user interaction. The Internet Gradient will continue to update until it reaches the unsigned 32 bit integer limit. Created by Dris Elamri." />
     <meta property="og:image" content="/static/internet-gradient-image.png" />
 
-    <!-- Twitter -->
     <meta property="twitter:card" content="summary_large_image" />
     <meta property="twitter:url" content="https://internetgradient.com" />
     <meta property="twitter:title" content="The Internet Gradient" />
-    <meta property="twitter:description" content="The Internet Gradient is a live gradient that updates in real-time based on user interaction. Created by Dris Elamri." />
+    <meta
+      property="twitter:description"
+      content="The Internet Gradient is a live canvas that updates in real-time based on user interaction. The Internet Gradient will continue to update until it reaches the unsigned 32 bit integer limit. Created by Dris Elamri." />
     <meta property="twitter:image" content="/static/internet-gradient-image.png" />
     <style>
       * {
@@ -30,9 +33,9 @@
 
       html,
       body {
-        width: 100vw;
-        height: 100vh;
-        overflow: hidden;
+        width: 100dvw;
+        height: 100dvh;
+        overflow: hidden !important;
       }
 
       h1,
@@ -65,6 +68,23 @@
         width: 100%;
         height: 100%;
       }
+
+      #counter {
+        font-size: 14px;
+        text-align: right;
+      }
+
+      @media (max-width: 768px) {
+        #info {
+          display: none;
+        }
+      }
+
+      @media (max-width: 375px) {
+        .repo {
+          display: none;
+        }
+      }
     </style>
   </head>
   <body>
@@ -72,14 +92,17 @@
       <h1>InternetGradient.com</h1>
       <a href="https://dris.one" target="_blank" noreferrer style="text-decoration: none">By Dris Elamri</a>
     </div>
+    <div style="position: absolute; top: 16px; right: 16px; z-index: 1000">
+      <h4><i id="counter">#0</i></h4>
+    </div>
     <div style="position: absolute; bottom: 16px; left: 16px; z-index: 1000">
-      <h4>Click anywhere on the screen to add color</h4>
-      <span><i>Open in 1920x1080 for best experience</i></span>
+      <h4>Click anywhere to add color.</h4>
+      <span id="info"><i>Open in 1920x1080 for best experience</i></span>
     </div>
     <div style="position: absolute; bottom: 16px; right: 16px; z-index: 1000">
       <a href="javascript:screenshot()">Screenshot</a>
-      <span>|</span>
-      <a href="https://github.com/dris-e/internet-gradient" target="_blank" noreferrer>Repo</a>
+      <span class="repo">|</span>
+      <a href="https://github.com/dris-e/internet-gradient" target="_blank" noreferrer class="repo">Repo</a>
     </div>
     <canvas id="canvas" width="1920" height="1080"> Your browser does not support this site. </canvas>
     <script>
@@ -96,13 +119,18 @@
       // stop updates to inactive clients
       // pause and flash effect screenshot
       // redis db yep
-      // fix bug for first in max not displayed
+      // fix bug for first in max not displayed nah later
+      // hide overflow
+      // mobile text
+      // alert to refresh if not live state yep
+      // use text counter, create counter text on screenshot
 
       const server = "https://internetgradient.com";
       // const server = "http://localhost:8080";
 
       const canvas = document.getElementById("canvas");
       const ctx = canvas.getContext("2d");
+      const counter = document.getElementById("counter");
       let global = 0;
 
       const max = 100;
@@ -126,6 +154,7 @@
 
         const data = new Uint16Array(event.data);
         global = (data[1] << 16) | data[0];
+        counter.textContent = `#${global.toLocaleString()}`;
 
         if (data.length >= max * 2 + 2) {
           gradients = data.subarray(2, max * 2 + 2);
@@ -219,8 +248,6 @@
         }
 
         ctx.drawImage(noise(), 0, 0, width, height);
-
-        drawCounter();
       };
 
       const addGradient = (x, y) => {
@@ -255,6 +282,7 @@
       };
 
       const screenshot = () => {
+        drawCounter();
         tempText("InternetGradient.com");
         const data = canvas.toDataURL("image/png");
         const link = document.createElement("a");
