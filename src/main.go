@@ -2,7 +2,9 @@ package main
 
 import (
 	"bytes"
+	"context"
 	"encoding/binary"
+	"encoding/json"
 	"fmt"
 	"log"
 	"net/http"
@@ -10,6 +12,7 @@ import (
 	"sync"
 	"time"
 
+	"github.com/go-redis/redis/v8"
 	"github.com/gorilla/websocket"
 )
 
@@ -42,15 +45,45 @@ var (
 	clientCount    = make(map[*websocket.Conn]int)
 )
 
+var (
+	redisClient *redis.Client
+	ctx         = context.Background()
+)
+
+func init() {
+	redisAddr := os.Getenv("REDIS_ADDR")
+	if redisAddr == "" {
+		redisAddr = "localhost:6379"
+	}
+
+	password := os.Getenv("REDIS_PASSWORD")
+
+	redisClient = redis.NewClient(&redis.Options{
+		Addr:     redisAddr,
+		Password: password,
+		DB:       0,
+	})
+}
+
 func main() {
+	loadRedis()
 	myhttp := http.NewServeMux()
-	// fs := http.FileServer(http.Dir("/usr/local/views"))
-	fs := http.FileServer(http.Dir("./views/"))
+	fs := http.FileServer(http.Dir("/usr/local/views"))
+	// fs := http.FileServer(http.Dir("./views/"))
 	myhttp.Handle("/", http.StripPrefix("", fs))
 
 	myhttp.HandleFunc("/socket", handleConnections)
 
 	go handleMessages()
+
+	go func() {
+		ticker := time.NewTicker(60 * time.Second)
+		defer ticker.Stop()
+		for range ticker.C {
+			saveRedis()
+			log.Println("saved db")
+		}
+	}()
 
 	port := os.Getenv("PORT")
 	if port == "" {
@@ -58,6 +91,44 @@ func main() {
 	}
 	log.Printf("server on port %s", port)
 	http.ListenAndServe(":"+port, myhttp)
+}
+
+func loadRedis() {
+	val, err := redisClient.Get(ctx, "globalCounter").Result()
+	if err == nil {
+		fmt.Sscanf(val, "%d", &globalCounter)
+	}
+
+	val, err = redisClient.Get(ctx, "gradients").Result()
+	if err == nil {
+		var redisGradient []uint16
+		err = json.Unmarshal([]byte(val), &redisGradient)
+		if err == nil {
+			gradients = redisGradient
+		}
+	}
+
+	val, err = redisClient.Get(ctx, "locations").Result()
+	if err == nil {
+		var redisLocations map[string]int
+		err = json.Unmarshal([]byte(val), &redisLocations)
+		if err == nil {
+			locations = redisLocations
+		}
+	}
+}
+
+func saveRedis() {
+	redisClient.Set(ctx, "globalCounter", fmt.Sprintf("%d", globalCounter), 0)
+
+	gradientsJson, err := json.Marshal(gradients)
+	if err == nil {
+		redisClient.Set(ctx, "gradients", string(gradientsJson), 0)
+	}
+	locationsJson, err := json.Marshal(locations)
+	if err == nil {
+		redisClient.Set(ctx, "locations", string(locationsJson), 0)
+	}
 }
 
 // websocket stuff
@@ -137,6 +208,11 @@ func handleMessages() {
 			}
 			locations[key]++
 			globalCounter++
+
+			if globalCounter%1000 == 0 {
+				saveRedis()
+				log.Println("saved db")
+			}
 
 			if globalCounter == ^uint32(0) {
 				gradientsMutex.Unlock()
