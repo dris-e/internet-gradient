@@ -6,6 +6,7 @@ import (
 	"fmt"
 	"log"
 	"net/http"
+	"os"
 	"sync"
 	"time"
 
@@ -18,8 +19,9 @@ var upgrader = websocket.Upgrader{
 	CheckOrigin: func(r *http.Request) bool {
 		origin := r.Header.Get("Origin")
 		allowedOrigins := map[string]bool{
-			"http://localhost:8080":       true,
-			"http://internetgradient.com": true,
+			"http://localhost:8080":        true,
+			"http://internetgradient.com":  true,
+			"https://internetgradient.com": true,
 		}
 		return allowedOrigins[origin]
 	},
@@ -42,6 +44,7 @@ var (
 
 func main() {
 	myhttp := http.NewServeMux()
+	// fs := http.FileServer(http.Dir("/usr/local/views"))
 	fs := http.FileServer(http.Dir("./views/"))
 	myhttp.Handle("/", http.StripPrefix("", fs))
 
@@ -49,7 +52,12 @@ func main() {
 
 	go handleMessages()
 
-	http.ListenAndServe(":8080", myhttp)
+	port := os.Getenv("PORT")
+	if port == "" {
+		port = "8080"
+	}
+	log.Printf("server on port %s", port)
+	http.ListenAndServe(":"+port, myhttp)
 }
 
 // websocket stuff

@@ -4,6 +4,23 @@
     <meta charset="UTF-8" />
     <meta name="viewport" content="width=device-width, initial-scale=1.0" />
     <title>The Internet Gradient</title>
+    <meta
+      name="description"
+      content="The Internet Gradient is a live gradient that updates in real-time based on user interaction. The Internet Gradient will continue to update until it reaches the unsigned 32 bit integer limit. Created by Dris Elamri." />
+    <link rel="icon" href="/static/internet-gradient-favicon.png" type="image/png" />
+
+    <meta property="og:type" content="website" />
+    <meta property="og:url" content="https://internetgradient.com" />
+    <meta property="og:title" content="The Internet Gradient" />
+    <meta property="og:description" content="The Internet Gradient is a live gradient that updates in real-time based on user interaction. Created by Dris Elamri." />
+    <meta property="og:image" content="/static/internet-gradient-image.png" />
+
+    <!-- Twitter -->
+    <meta property="twitter:card" content="summary_large_image" />
+    <meta property="twitter:url" content="https://internetgradient.com" />
+    <meta property="twitter:title" content="The Internet Gradient" />
+    <meta property="twitter:description" content="The Internet Gradient is a live gradient that updates in real-time based on user interaction. Created by Dris Elamri." />
+    <meta property="twitter:image" content="/static/internet-gradient-image.png" />
     <style>
       * {
         margin: 0;
@@ -62,7 +79,7 @@
     <div style="position: absolute; bottom: 16px; right: 16px; z-index: 1000">
       <a href="javascript:screenshot()">Screenshot</a>
       <span>|</span>
-      <a href="https://github.com/driselamri/internet-gradient" target="_blank" noreferrer>Repo</a>
+      <a href="https://github.com/dris-e/internet-gradient" target="_blank" noreferrer>Repo</a>
     </div>
     <canvas id="canvas" width="1920" height="1080"> Your browser does not support this site. </canvas>
     <script>
@@ -77,8 +94,12 @@
       // grainy background yep
       // cap at 2 clicks per second yep but now 8
       // stop updates to inactive clients
+      // pause and flash effect screenshot
+      // redis db
+      // fix bug for first in max not displayed
 
-      const server = "http://localhost:8080";
+      const server = "https://internetgradient.com";
+      // const server = "http://localhost:8080";
 
       const canvas = document.getElementById("canvas");
       const ctx = canvas.getContext("2d");
@@ -224,7 +245,7 @@
       };
 
       const tempText = (text) => {
-        ctx.save(); 
+        ctx.save();
         ctx.font = "italic 14px monospace";
         ctx.fillStyle = "white";
         ctx.globalAlpha = 0.8;

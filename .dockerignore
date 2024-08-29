@@ -1,0 +1,3 @@
+# flyctl launch added from .gitignore
+**/test.js
+fly.toml
