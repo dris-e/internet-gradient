@@ -1,0 +1,265 @@
+<!DOCTYPE html>
+<html lang="en">
+  <head>
+    <meta charset="UTF-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+    <title>The Internet Gradient</title>
+    <style>
+      * {
+        margin: 0;
+        padding: 0;
+        cursor: crosshair;
+      }
+
+      html,
+      body {
+        width: 100vw;
+        height: 100vh;
+        overflow: hidden;
+      }
+
+      h1,
+      h3,
+      h4,
+      a,
+      span {
+        font-family: monospace;
+        letter-spacing: -0.025em;
+        mix-blend-mode: exclusion;
+        color: white;
+        pointer-events: none;
+      }
+
+      a,
+      span {
+        opacity: 0.8;
+      }
+
+      a {
+        pointer-events: auto;
+        cursor: pointer !important;
+      }
+
+      canvas {
+        position: absolute;
+        top: 0;
+        left: 0;
+        z-index: 0;
+        width: 100%;
+        height: 100%;
+      }
+    </style>
+  </head>
+  <body>
+    <div style="position: absolute; top: 16px; left: 16px; z-index: 1000">
+      <h1>InternetGradient.com</h1>
+      <a href="https://dris.one" target="_blank" noreferrer style="text-decoration: none">By Dris Elamri</a>
+    </div>
+    <div style="position: absolute; bottom: 16px; left: 16px; z-index: 1000">
+      <h4>Click anywhere on the screen to add color</h4>
+      <span><i>Open in 1920x1080 for best experience</i></span>
+    </div>
+    <div style="position: absolute; bottom: 16px; right: 16px; z-index: 1000">
+      <a href="javascript:screenshot()">Screenshot</a>
+      <span>|</span>
+      <a href="https://github.com/driselamri/internet-gradient" target="_blank" noreferrer>Repo</a>
+    </div>
+    <canvas id="canvas" width="1920" height="1080"> Your browser does not support this site. </canvas>
+    <script>
+      // u16 array yep
+      // only send / req if within bounds maybe later
+      // scuffed radius stuff - send from server? nah
+      // not same location but dont allow if within certain radius from same
+      // total counter yep
+      // screenshot? yep
+      // stop at limit yep
+      // include number in background yep
+      // grainy background yep
+      // cap at 2 clicks per second yep but now 8
+      // stop updates to inactive clients
+
+      const server = "http://localhost:8080";
+
+      const canvas = document.getElementById("canvas");
+      const ctx = canvas.getContext("2d");
+      let global = 0;
+
+      const max = 100;
+      const maxG = 5;
+      let gradients = new Uint16Array(max * 2);
+      const locations = new Map();
+
+      let width = canvas.width;
+      let height = canvas.height;
+      const radius = width / 2;
+      // const radius = 800;
+
+      const socket = new WebSocket(server + "/socket");
+      socket.binaryType = "arraybuffer";
+
+      socket.onmessage = (event) => {
+        if (typeof event.data === "string") {
+          finish(event.data);
+          return;
+        }
+
+        const data = new Uint16Array(event.data);
+        global = (data[1] << 16) | data[0];
+
+        if (data.length >= max * 2 + 2) {
+          gradients = data.subarray(2, max * 2 + 2);
+          console.log(gradients);
+          locations.clear();
+          for (let i = 0; i < gradients.length; i += 2) {
+            const x = gradients[i];
+            const y = gradients[i + 1];
+            const key = `${x},${y}`;
+            locations.set(key, (locations.get(key) || 0) + 1);
+          }
+        } else {
+          console.log(data);
+          const x = data[2];
+          const y = data[3];
+          const key = `${x},${y}`;
+          const count = locations.get(key) || 0;
+
+          if (count < maxG) {
+            if (gradients.length >= max * 2) {
+              gradients.copyWithin(0, 2);
+            }
+            gradients.set([x, y], gradients.length - 2);
+            locations.set(key, count + 1);
+          }
+        }
+
+        drawGradient();
+      };
+
+      socket.onopen = () => {
+        console.log("socket opened");
+      };
+
+      socket.onclose = () => {
+        console.log("socket closed");
+      };
+
+      socket.onerror = (error) => {
+        console.log("socket error", error);
+      };
+
+      const getColor = (x, y) => {
+        const normalizedX = x / width;
+        const normalizedY = y / height;
+        const h = Math.floor((((normalizedX + normalizedY) / 2) * 360 + global * 10) % 360);
+        return `hsl(${h}, 100%, ${40 + (global % 21)}%)`;
+      };
+
+      const drawCounter = () => {
+        ctx.font = "italic bold 14px monospace";
+        ctx.fillStyle = "white";
+        ctx.textAlign = "right";
+        ctx.fillText(`#${global.toLocaleString()}`, width - 14, 30);
+      };
+
+      const noise = () => {
+        const noiseCanvas = document.createElement("canvas");
+        const noiseCtx = noiseCanvas.getContext("2d");
+
+        noiseCanvas.width = width;
+        noiseCanvas.height = height;
+
+        const imageData = noiseCtx.createImageData(width, height);
+        const data = imageData.data;
+
+        for (let i = 0; i < data.length; i += 4) {
+          const value = Math.random() * 255;
+          data[i] = data[i + 1] = data[i + 2] = value;
+          data[i + 3] = 10;
+        }
+
+        noiseCtx.putImageData(imageData, 0, 0);
+        return noiseCanvas;
+      };
+
+      const drawGradient = () => {
+        ctx.clearRect(0, 0, width, height);
+
+        for (let i = 0; i < gradients.length; i += 2) {
+          const x = gradients[i];
+          const y = gradients[i + 1];
+          if (x + radius > 0 && x - radius < width && y + radius > 0 && y - radius < height) {
+            const color = getColor(x, y);
+            const grad = ctx.createRadialGradient(x, y, 0, x, y, radius);
+            grad.addColorStop(0, color);
+            grad.addColorStop(1, "transparent");
+            ctx.fillStyle = grad;
+            ctx.fillRect(0, 0, width, height);
+          }
+        }
+
+        ctx.drawImage(noise(), 0, 0, width, height);
+
+        drawCounter();
+      };
+
+      const addGradient = (x, y) => {
+        const gradient = new Uint16Array([x, y]);
+        socket.send(gradient.buffer);
+      };
+
+      canvas.addEventListener("click", (event) => {
+        const rect = canvas.getBoundingClientRect();
+        const x = event.clientX - rect.left;
+        const y = event.clientY - rect.top;
+
+        addGradient(x, y);
+      });
+
+      const resize = () => {
+        width = window.innerWidth;
+        height = window.innerHeight;
+        canvas.width = width;
+        canvas.height = height;
+        drawGradient();
+      };
+
+      const tempText = (text) => {
+        ctx.save(); 
+        ctx.font = "italic 14px monospace";
+        ctx.fillStyle = "white";
+        ctx.globalAlpha = 0.8;
+        ctx.textAlign = "left";
+        ctx.fillText(text, 14, height - 16);
+        ctx.restore();
+      };
+
+      const screenshot = () => {
+        tempText("InternetGradient.com");
+        const data = canvas.toDataURL("image/png");
+        const link = document.createElement("a");
+        link.href = data;
+        link.download = `internet-gradient-${global}.png`;
+        link.click();
+        drawGradient();
+      };
+
+      const finish = (data) => {
+        ctx.font = "bold 28px monospace";
+        ctx.textAlign = "center";
+        ctx.fillStyle = "white";
+        ctx.fillText(data, width / 2, height / 2);
+      };
+
+      const debounce = (func, wait) => {
+        let timeout;
+        return (...args) => {
+          clearTimeout(timeout);
+          timeout = setTimeout(() => func.apply(this, args), wait);
+        };
+      };
+
+      window.addEventListener("resize", debounce(resize, 100));
+      resize();
+    </script>
+  </body>
+</html>
