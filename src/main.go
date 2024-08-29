@@ -35,7 +35,7 @@ var (
 	broadcast             = make(chan []byte)
 	gradients             = []uint16{}
 	locations             = make(map[string]int)
-	max                   = 100
+	max                   = 120
 	maxG                  = 5
 	globalCounter  uint32 = 0
 	clientsMutex   sync.Mutex
@@ -51,18 +51,13 @@ var (
 )
 
 func init() {
-	redisAddr := os.Getenv("REDIS_ADDR")
-	if redisAddr == "" {
-		redisAddr = "localhost:6379"
+	redisURL := os.Getenv("REDIS_ADDR")
+	options, err := redis.ParseURL(redisURL)
+	if err != nil {
+		log.Fatalf("cant parse url: %v", err)
 	}
 
-	password := os.Getenv("REDIS_PASSWORD")
-
-	redisClient = redis.NewClient(&redis.Options{
-		Addr:     redisAddr,
-		Password: password,
-		DB:       0,
-	})
+	redisClient = redis.NewClient(options)
 }
 
 func main() {

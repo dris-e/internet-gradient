@@ -123,17 +123,19 @@
       // hide overflow
       // mobile text
       // alert to refresh if not live state yep
-      // use text counter, create counter text on screenshot
+      // use text counter, create counter text on screenshot yep
+      // viewer count
+      // alert for rate limit
 
-      const server = "https://internetgradient.com";
-      // const server = "http://localhost:8080";
+      const server = "wss://internetgradient.com";
+      // const server = "ws://localhost:8080";
 
       const canvas = document.getElementById("canvas");
       const ctx = canvas.getContext("2d");
       const counter = document.getElementById("counter");
       let global = 0;
 
-      const max = 100;
+      const max = 120;
       const maxG = 5;
       let gradients = new Uint16Array(max * 2);
       const locations = new Map();
