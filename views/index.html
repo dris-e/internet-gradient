@@ -1,13 +1,23 @@
 <!DOCTYPE html>
 <html lang="en">
   <head>
+    <script async src="https://www.googletagmanager.com/gtag/js?id=G-RC7H2832V0"></script>
+    <script>
+      window.dataLayer = window.dataLayer || [];
+      function gtag() {
+        dataLayer.push(arguments);
+      }
+      gtag("js", new Date());
+
+      gtag("config", "G-RC7H2832V0");
+    </script>
     <meta charset="UTF-8" />
     <meta name="viewport" content="width=device-width, initial-scale=1.0" />
     <title>The Internet Gradient</title>
     <meta
       name="description"
       content="The Internet Gradient is a live canvas that updates in real-time based on user interaction. The Internet Gradient will continue to update until it reaches the unsigned 32 bit integer limit. Created by Dris Elamri." />
-    <link rel="icon" href="/static/internet-gradient-favicon.png" type="image/png" />
+    <link rel="icon" href="https://internetgradient.com/static/internet-gradient-favicon.png" type="image/png" />
 
     <meta property="og:type" content="website" />
     <meta property="og:url" content="https://internetgradient.com" />
@@ -15,7 +25,7 @@
     <meta
       property="og:description"
       content="The Internet Gradient is a live canvas that updates in real-time based on user interaction. The Internet Gradient will continue to update until it reaches the unsigned 32 bit integer limit. Created by Dris Elamri." />
-    <meta property="og:image" content="/static/internet-gradient-image.png" />
+    <meta property="og:image" content="https://internetgradient.com/static/internet-gradient-image.png" />
 
     <meta property="twitter:card" content="summary_large_image" />
     <meta property="twitter:url" content="https://internetgradient.com" />
@@ -23,7 +33,7 @@
     <meta
       property="twitter:description"
       content="The Internet Gradient is a live canvas that updates in real-time based on user interaction. The Internet Gradient will continue to update until it reaches the unsigned 32 bit integer limit. Created by Dris Elamri." />
-    <meta property="twitter:image" content="/static/internet-gradient-image.png" />
+    <meta property="twitter:image" content="https://internetgradient.com/static/internet-gradient-image.png" />
     <style>
       * {
         margin: 0;
@@ -124,8 +134,9 @@
       // mobile text
       // alert to refresh if not live state yep
       // use text counter, create counter text on screenshot yep
-      // viewer count
+      // client count
       // alert for rate limit
+      // live cursor
 
       const server = "wss://internetgradient.com";
       // const server = "ws://localhost:8080";
